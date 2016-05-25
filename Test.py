@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import scipy, math, scipy.integrate, sys, random, Queue, threading
+import scipy, math, scipy.integrate, sys, random, threading
+#, Queue
 
 # How about training the model ...... ?
 # 2015-04-22 First step: Print the estimation E[ln(P(Y|h))] for 
@@ -146,7 +147,7 @@ def erf(x):
 			ret = ret + term
 			term = term * ((a + s) / (b + s) / (s + 1)) * x * x
 			if math.isinf(term):
-				print x, a, b, s
+				print(x, a, b, s)
 				assert False
 			if abs(term) < 1e-8:
 				break
@@ -281,7 +282,7 @@ def EmissionProbability(state_begin, state_end, note_begin, note_end):
 # https://en.wikipedia.org/wiki/Viterbi_algorithm
 # ========================================================================
 def viterbi(obs, states, start_p, trans_p, EmissionProbability):
-	print "Observations: %s" % " ".join(["".join([str(xx) for xx in x]) for x in obs])
+	print("Observations: %s" % " ".join(["".join([str(xx) for xx in x]) for x in obs]))
 
 	V = [{}]
 	path = {}
@@ -402,8 +403,8 @@ if False:
 					src_fs[idx0], dest_fs[idx1], src_notes[idx0],
 					dest_notes[idx1]);
 			prob = math.log(prob);
-			print "%s -> %s: %f" % (" ".join(src_fs), " ".join(dest_fs),
-				prob)
+			print("%s -> %s: %f" % (" ".join(src_fs), " ".join(dest_fs),
+				prob))
 	exit(0);
 
 def do_Permutation(elts, num, stack, last_idx):
@@ -430,15 +431,15 @@ def PrintPathDetails(obs, path, start_p, trans_p, emission_probability):
 			emission_probability);
 		sum_p += ret
 		if t==0:
-			print "[%s] @ %s, Starting, LgProb=%g" % (
+			print("[%s] @ %s, Starting, LgProb=%g" % (
 				", ".join([str(x) for x in f_curr]), "".join([str(x) for x in obs[t]]),
 				tran_p
-			)
+			))
 		else:
-			print "[%s] @ %s, LgTransProb=%g, LgEmissionProb=%g, VertP=%g, SumLgProb=%g" % (
+			print("[%s] @ %s, LgTransProb=%g, LgEmissionProb=%g, VertP=%g, SumLgProb=%g" % (
 				", ".join([str(x) for x in f_curr]), "".join([str(x) for x in obs[t]]),
 				tran_p, emi_p, vert_p, sum_p
-			)
+			))
 		notes_prev = notes_curr; f_prev = f_curr;
 
 def GetPathCost(obs, path, start_p, trans_p, emission_probability):
@@ -495,7 +496,7 @@ def viterbiPoly(obs, states, start_p, trans_p, emission_probability):
 		path[tuple([y])]  = [([y])]
 	
 	for t in range(0, len(obs)):
-		if DEBUG: print "t=%d" % t
+		if DEBUG: print("t=%d" % t)
 		V = {}
 		curr_notes = obs[t]
 		if type(curr_notes) == tuple:
@@ -506,7 +507,7 @@ def viterbiPoly(obs, states, start_p, trans_p, emission_probability):
 		num_notes = len(curr_notes)
 
 		k0 = sorted(Vprev.keys(), key=lambda x : Vprev[x][0], reverse=True)[0]
-		if DEBUG: print k0, Vprev[k0][1]
+		if DEBUG: print(k0, Vprev[k0][1])
 
 		for fingers in Permutation(states, num_notes):
 			max_lg_prob = -1e20
@@ -524,10 +525,10 @@ def viterbiPoly(obs, states, start_p, trans_p, emission_probability):
 					if t > 0: path[fingers] = path_prev[fingers_prev]
 					else: path[fingers] = []
 					max_lg_prob = lg_prob_prev + delta_lg_prob
-					if DEBUG: print "%s %s ---> %s %s = %g" % (
+					if DEBUG: print("%s %s ---> %s %s = %g" % (
 						str(fingers_prev), str(notes_prev),
 						str(fingers),      str(curr_notes),
-						lg_prob_prev + delta_lg_prob)
+						lg_prob_prev + delta_lg_prob))
 
 		Vprev = Vcurr; Vcurr = {}
 		for k, v in path.items():
@@ -728,16 +729,16 @@ def ProcessTrainingData(obs, states, start_p, trans_p, emission_probability, y0)
 				    trans_p,
 				    EmissionProbability_safe)
 	if IsFingeringIdentical(path, y0):
-		print "Consistent with training set!"
+		print("Consistent with training set!")
 	else:
-		print "Not Consistent with training set!"
-		print "Training:", y0
-		print "Hyp:     ", path
+		print("Not Consistent with training set!")
+		print("Training:", y0)
+		print("Hyp:     ", path)
 
 def viterbiPoly_threadstart(obs, states, start_p, trans_p, emission_prob, output):
 	path, cost = viterbiPoly(obs, states, start_p, trans_p, emission_prob)
 	output["path"] = path; output["cost1"] = cost;
-	print "ok"
+	print("ok")
 
 def TuningProblem1(training_obs, training_fs, training_starts):
 
@@ -807,18 +808,18 @@ def TuningProblem1(training_obs, training_fs, training_starts):
 						assert type(x) == tuple
 						key0 = tuple(x[0])  # Fingering in training data
 						val0 = tuple(x[1])  # Fingering generated using VS
-						if not offenders[tidx][i].has_key(val0):
+						if val0 not in offenders[tidx][i]:
 							offenders[tidx][i][val0] = 0
 						offenders[tidx][i][val0] += 1
 					
-				print "Training example %d, not eq training fingering, cost: %g vs %g, diff=%g" %  \
-					(tidx, cost1, cost2, cost2-cost1)
+				print("Training example %d, not eq training fingering, cost: %g vs %g, diff=%g" %  \
+					(tidx, cost1, cost2, cost2-cost1))
 				diffs.append(cost2-cost1)
 				wrong_paths.append(path)
 				is_error.append(True)
 				ok = False
 			else:
-				print "Training example %d,     eq training fingering, cost: %g" %  (tidx, cost1)
+				print("Training example %d,     eq training fingering, cost: %g" %  (tidx, cost1))
 				is_error.append(False)
 				wrong_paths.append(None)
 				diffs.append(0)
@@ -903,8 +904,8 @@ def TuningProblem1(training_obs, training_fs, training_starts):
 #		print "Gradients of Tran Prob:"
 #		for k, v in gradients_t.items():
 #			print k, ", ".join([str(x) for x in v.items()])
-		print "New Y: ", ", ".join([str(x) for x in g_Y])
-		print "New Transition Prob: "
+		print("New Y: ", ", ".join([str(x) for x in g_Y]))
+		print("New Transition Prob: ")
 		for k, v in transition_probability.items():
 			sys.stdout.write("'%s': {" % k)
 			for k1, v1 in v.items():
@@ -931,27 +932,27 @@ def TuningProblem1(training_obs, training_fs, training_starts):
 			sum0 = 0
 			for ety in o:
 				sum0 = sum0 + sum(ety.values())
-			print "Training example %d has %d offenders" % (tidx, sum0)
+			print("Training example %d has %d offenders" % (tidx, sum0))
 			counts.append(sum0)
 		print("==========Detailed Offenders list=====")
 		for tidx, o in enumerate(offenders):
 			if counts[tidx] > 0:
-				print "Training example %d (%d):" % (tidx, counts[tidx])
+				print("Training example %d (%d):" % (tidx, counts[tidx]))
 				for i, ety in enumerate(o):
 					if ety is not None:
 						correct = training_fs[tidx][i]
 						for i1, kv in enumerate(ety.items()):
-							print "  Note [%d], %s, %s->%s (%d)" % (i, \
-								str(training_obs[tidx][i]), correct, kv[0], kv[1])
+							print("  Note [%d], %s, %s->%s (%d)" % (i, \
+								str(training_obs[tidx][i]), correct, kv[0], kv[1]))
 			else:
-				print "There are no offenders for training example %d." % tidx
+				print("There are no offenders for training example %d." % tidx)
 
 
 def TestKumarsEquation():
 	tact = [1,2]; x0=1; y0=2; sigma_x_sq=300; sigma_y_sq=90;
 	bbs = [ [-55,-10,34,-5] ]
-	print Gaussian2DProbMass(tact, x0, y0, sigma_x_sq, sigma_y_sq, bbs)
-	print Gaussian2DProbMass_fast(tact, x0, y0, sigma_x_sq, sigma_y_sq, bbs)
+	print(Gaussian2DProbMass(tact, x0, y0, sigma_x_sq, sigma_y_sq, bbs))
+	print(Gaussian2DProbMass_fast(tact, x0, y0, sigma_x_sq, sigma_y_sq, bbs))
 
 # I think it passed  (2015-04-24)
 #TestKumarsEquation(); 
@@ -964,7 +965,7 @@ TuningProblem1(
 		observations7,# observations8, observations9_dedup,
 		#observations10
 	], 
-	[y0_1, y0_2, y0_3, y0_4, y0_5, y0_6, y0_7,],# y0_8, y0_9_dedup, y0_10],
+	[y0_1, y0_2, y0_3, y0_4, y0_5, y0_6, y0_7],# y0_8, y0_9_dedup, y0_10],
 	[start_p1, start_p2, start_p3, start_p4, start_p5, start_p6, start_p7,]# start_p8, start_p9, start_p10]
 )
 exit(0)
@@ -972,7 +973,7 @@ exit(0)
 # PARAMETER TUNING FOR TRAINING EXAMPLES IN IJCAI07
 
 # A
-print "\n(A) in Figure 3 in the paper"
+print("\n(A) in Figure 3 in the paper")
 ProcessTrainingData(observations1,
 			   states,
 			   start_p1,
@@ -981,7 +982,7 @@ ProcessTrainingData(observations1,
 			   y0_1)
 
 # (B) in Figure 3
-print "\n(B) in Figure 3 in the paper"
+print("\n(B) in Figure 3 in the paper")
 ProcessTrainingData(observations2,
 				   states,
 				   start_p2,
@@ -990,7 +991,7 @@ ProcessTrainingData(observations2,
 				   y0_2)
 
 # C, first half
-print "\nLeft half of (C) in Figure 3 in the paper"
+print("\nLeft half of (C) in Figure 3 in the paper")
 
 ProcessTrainingData(observations3,
 			   states,
@@ -1000,7 +1001,7 @@ ProcessTrainingData(observations3,
 			   y0_3)
 
 # C, second half
-print "\nRight half of (C) in Figure 3 in the paper"
+print("\nRight half of (C) in Figure 3 in the paper")
 
 ProcessTrainingData(observations4,
 			   states,
@@ -1010,7 +1011,7 @@ ProcessTrainingData(observations4,
 			   y0_4)
 
 # D, first half
-print "\nFirst half of (D) in Figure 3 in the paper"
+print("\nFirst half of (D) in Figure 3 in the paper")
 ProcessTrainingData(observations5,
 				   states,
 				   start_p5,
@@ -1019,7 +1020,7 @@ ProcessTrainingData(observations5,
 				   y0_5)
 
 # D, second half
-print "\nSecond half of (D) in Figure 3 in the paper"
+print("\nSecond half of (D) in Figure 3 in the paper")
 ProcessTrainingData(observations6,
 				   states,
 				   start_p6,
@@ -1028,7 +1029,7 @@ ProcessTrainingData(observations6,
 				   y0_6)
 
 # E
-print "\n(E) in Figure 3 in the paper"
+print("\n(E) in Figure 3 in the paper")
 ProcessTrainingData(observations7,
 			   states,
 			   start_p7,
@@ -1040,12 +1041,12 @@ exit(0)
 
 if False:
 	test1 = [ ("C", 3), [("C",3), ("E",3) ], [("D",3), ("F",3)], [("E",3), ("G",3)] ]
-	print viterbiPoly(test1,
+	print(viterbiPoly(test1,
 				   states,
 					{'1st': 0.22, '2nd': 0.21, 
 						'3rd': 0.21, '4th':0.21, '5th': 0.14},
 				   transition_probability,
-				   EmissionProbability_safe)
+				   EmissionProbability_safe))
 
 # sugarcoated haws on a stick.
 if False:
@@ -1068,95 +1069,95 @@ aida1 = [ ("A", 3), ("#A", 3), ("C", 4), ("D", 4), ("C", 4), [("A",3), ("F",4)],
 		[("#A",3),("C",4),("E",4)], [("A",3),("C",4),("F",4)],
 		
 		]
-print viterbiPoly(aida1,
+print(viterbiPoly(aida1,
 			   states,
 				{'1st': 100, '2nd': 0.11, 
 					'3rd': 0.11, '4th':0.11, '5th': 0.11},
 			   transition_probability,
-			   EmissionProbability_safe)
+			   EmissionProbability_safe))
 
 aida2 = [[("E",4),("G",4)], [("F",4),("#G",4)], [("#F",4),("A",4)], [("G",4),("#A",4)],
 	[("#A",4),("D",5)], [("A",4),("C",5)], [("G",4),("#A",4)], [("F",4),("A",4)] ]
-print viterbiPoly(aida2,
+print(viterbiPoly(aida2,
 			   states,
 				{'1st': 100, '2nd': 0.11, 
 					'3rd': 0.11, '4th':0.11, '5th': 0.11},
 			   transition_probability,
-			   EmissionProbability_safe)
+			   EmissionProbability_safe))
 
 aida3 = [ [("E",4),("G",4)], [("F",4),("G",4),("B",4)], [("E",4),("G",4),("C",5)],
 	[("E",4),("G",4)], [("F",4),("#G",4)], [("#F",4),("A",4)], [("G",4),("#A",4)],
 	[("#A",4),("D",5)], [("A",4),("C",5)], [("G",4),("#A",4)], [("F",4),("A",4)],
 	[("E",4),("G",4)], ("C",4), ("B",3), ("#A",3), ("A",3), ("#A",3), ("C",4), ("D",4),
 	("C",4), [("A",3),("F",4)], [("C",4),("G",4)], [("F",4),("A",4)] ]
-print viterbiPoly(aida3,
+print(viterbiPoly(aida3,
 			   states,
 				{'1st': 100, '2nd': 0.11, 
 					'3rd': 0.11, '4th':0.11, '5th': 0.11},
 			   transition_probability,
-			   EmissionProbability_safe)
+			   EmissionProbability_safe))
 
 exit(0)
 
 
-print "\nExtreme Case 1"
+print("\nExtreme Case 1")
 scale1 = [ ("C", 3), ("C", 4), ("D", 3), ("D", 4), ("E", 3), ("E", 4) ]
-print viterbi(scale1,
+print(viterbi(scale1,
 			   states,
 				{'1st': 0.21, '2nd': 0.21, 
 					'3rd': 0.21, '4th':0.21, '5th': 0.14},
 			   transition_probability,
-			   EmissionProbability)
+			   EmissionProbability))
 
-print "Chord 1"
+print("Chord 1")
 chord1 = [ ("C", 3), ("E", 3), ("G", 3) ]
-print viterbi(chord1,
+print(viterbi(chord1,
 			   states,
 				{'1st': 0.21, '2nd': 0.21, 
 					'3rd': 0.21, '4th':0.21, '5th': 0.21},
 			   transition_probability,
-			   EmissionProbability)
+			   EmissionProbability))
 
-print "\nC Major Scale x 3 octaves"
+print("\nC Major Scale x 3 octaves")
 scale1 = [ 
 	("C",3),("D",3),("E",3),("F",3),("G",3),("A",3),("B",3),
 	("C",4),("D",4),("E",4),("F",4),("G",4),("A",4),("B",4),
 	("C",5),("D",5),("E",5),("F",5),("G",5),("A",5),("B",5),
 ];
-print viterbi(scale1,
+print(viterbi(scale1,
 			   states,
 				{'1st': 0.21, '2nd': 0.21, 
 					'3rd': 0.21, '4th':0.21, '5th': 0.14},
 			   transition_probability,
-			   EmissionProbability)
+			   EmissionProbability))
 
-print "\nA Minor Scale x 3 octaves"
+print("\nA Minor Scale x 3 octaves")
 scale = [
 	("A",2), ("B",2), ("C",3), ("D",3), ("E",3), ("F",3), ("#G",3),
 	("A",3), ("B",3), ("C",4), ("D",4), ("E",4), ("F",4), ("#G",4),
 	("A",4), ("B",4), ("C",5), ("D",5), ("E",5), ("F",5), ("#G",5),
 ]
-print viterbi(scale,
+print(viterbi(scale,
 			   states,
 				{'1st': 0.21, '2nd': 0.21, 
 					'3rd': 0.21, '4th':0.21, '5th': 0.14},
 			   transition_probability,
-			   EmissionProbability)
+			   EmissionProbability))
 
-print "\nF Major Scale x 3 octaves"
+print("\nF Major Scale x 3 octaves")
 scale = [
 	("F",2), ("G",2), ("A",2), ("#A",2), ("C",3), ("D",3), ("E",3),
 	("F",3), ("G",3), ("A",3), ("#A",3), ("C",4), ("D",4), ("E",4),
 	("F",4), ("G",4), ("A",4), ("#A",4), ("C",5), ("D",5), ("E",5),
 ]
-print viterbi(scale,
+print(viterbi(scale,
 			   states,
 				{'1st': 0.21, '2nd': 0.21, 
 					'3rd': 0.21, '4th':0.21, '5th': 0.14},
 			   transition_probability,
-			   EmissionProbability)
+			   EmissionProbability))
 
-print "\nB-flat Major Scale x 3 octaves"
+print("\nB-flat Major Scale x 3 octaves")
 scale2 = [ 
 	("#A",2),("C",3),("D",3),("#D",3),("F",3),("G",3),("A",3),
 	("#A",3),("C",4),("D",4),("#D",4),("F",4),("G",4),("A",4),
@@ -1164,12 +1165,12 @@ scale2 = [
 ];
 
 if False:
-	print viterbi(scale2,
+	print(viterbi(scale2,
 				   states,
 					{'1st': 0.21, '2nd': 0.21, 
 						'3rd': 0.21, '4th':0.21, '5th': 0.14},
 				   transition_probability,
-				   EmissionProbability)
+				   EmissionProbability))
 
 
 #print EmissionProbability("1st", "4th", ("G",3), ("E",3)) # 0.014
